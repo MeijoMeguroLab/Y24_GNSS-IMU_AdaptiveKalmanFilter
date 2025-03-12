@@ -1,0 +1,127 @@
+命名規則
+
+a~z
+
+coordinate
+
+
+a:analize,area,active
+b:boolean,book,busy,busy
+c:const,count,coordinate,cat
+d:data,diff,foor,discover
+e:element,error,evaluation,emergy
+f:flag,file,function,
+g:group,grade,goal,gallery
+h:handle,hash,harmony
+i:index
+j:join,jump
+k:key,kalmanfilter,keep
+l:length,list,level,local,loop,learn,language
+m:method,mind,mystery,map
+n:number,name,new,note
+o:object,option,order,open,original
+p:position,parameter,play,purpose
+q:query,queue,quick,quality,quotation,quest
+r:resut,rate,range,read,run,reward
+s:status,static,string,size,support
+t:time,type,text,trust,taste,true,team,thought
+u:user,unit,update,unique,ues,unite,utter
+v:value,vector,version,variable
+w:weight,wander,wisdom,wish,win
+x:	xenial
+y:	year,yes,you
+z:	zero,zest,zany,zoom
+
+一次：primary,fast-order,first
+二次：secondary,subordinate
+加工：maching,processing
+変質：deterioration,alteration
+局所変数：loacal variable
+マジックナンバー：majic number
+補助：auxiliary
+説明変数
+要約変数
+要約：summary
+短絡：short-circuit　jumping quiq 
+中間結果:interim results
+途中：en route　on the way　midway
+途中経過：progress on the way　en route
+halfway
+
+
+a:analize,area,active,add,attribute,argument,access
+b:boolean,book,busy,busy,block,branch
+c:const,count,coordinate,cat,catalyst,configure,contact,create,case,command,component,condition,content
+d:data,domain
+e:element,evaluation,exception,export
+f:flag,file,function,final,feature,field,format
+g:group,grade,goal,gallery,general,guide
+h:handle,hide,host
+i:index,input
+j:join,jump,jurisdiction
+k:key,kalmanfilter,keep
+l:length,list,level,local,loop,learn,language,launch,latest
+m:method,mind,mystery,map,modified,manage,memory,mode,module
+n:number,name
+o:option,output
+p:position,parameter,path,process
+q:query,queue
+r:raw
+s:status,sign,source,show
+t:time,text,task,terms
+u:user,unit,update,unique,ues,unite,utter,unknown,unused
+v:value,variable
+w:weight,wander,warn
+x:	xenial
+y:	year,yes,you
+z:	zero,zest,zany,zoom
+
+
+
+
+
+
+
+
+
+
+
+a:analize,area,active,add,attribute,argument,access,adaptive
+b:boolean,book,busy,block,branch,brokerage
+c:const,count,catalyst
+d:data
+e:element,evaluation,exception,export
+f:flag
+g:group,grade,goal,gallery,general,guide
+h:handle,hide,host
+i:index,input
+j:join,jump,jurisdiction
+k:key,kalmanfilter,keep
+l:length,list,level,local,loop,learn,language,launch,latest
+m:method,mind,mystery,map,modified,manage,memory,mode,module
+n:number,name
+o:option,output
+p:position,parameter,path,process
+q:queue
+r:raw
+s:status,source
+t:time
+u:unique,unknown,unused
+v:value
+w:weight,wander
+x:
+y:
+z:
+
+
+
+
+
+
+
+
+
+
+
+
+
