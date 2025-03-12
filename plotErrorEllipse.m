@@ -48,7 +48,7 @@ function plotErrorEllipse(x, y, Pmatrix, varargin)
     points(2,:) = points(2,:) + y;
     
     % 楕円を描画（指定された色で）
-    plot(points(1,:), points(2,:), 'Color', '#66cdaa', 'LineWidth', 0.5);
+    plot(points(1,:), points(2,:), 'Color', '#66cdaa', 'LineWidth', 1);
     hold on;
     plot(x, y,'.','Color','#66cdaa','MarkerSize', 12);
 end
