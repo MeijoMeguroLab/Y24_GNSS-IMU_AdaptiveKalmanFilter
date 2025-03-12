@@ -26,28 +26,32 @@
 以下のディレクトリ構成でファイルを配置してください：
 ```
 ├── a_GIAKF_main.m          # メインスクリプト
+├── 0.Data                  # データディレクトリ
+│   ├── observation         # GNSSデータ
+│   │   └── nagoya1_float.pos
+│   └── 20230616            # リファレンス・IMUデータ
+│       ├── POSLV
+│       │   └── POSLV_run2.mat
+│       └── Eagleye
+│           └── run2
+│               └── eagleye_log.csv
 ├── A.Preprocessing         # 前処理モジュール
 │   └── A_GIAKF_Preprocessing.m
 ├── B.ParameterSettings     # パラメータ設定
 │   └── B_GIAKF_ParameterSettings.m
 ├── C.EKF                   # EKF実装
 │   └── C_GIAKF_adaptive.m
+├── D.Evaluation            # 描画用
+├── E.dit                   # 編集用
+├── Figure                  # Figure管理フォルダ
 ├── CurveErrorCompensation.m  # 補足: カーブ補正クラス
-├── ImprovedAdaptiveKF.m      # 補足: 拡張適応カルマンフィルタ
-└── 0.Data                  # データディレクトリ
-    ├── observation         # GNSSデータ
-    │   └── nagoya1_float.pos
-    └── 20230616            # リファレンス・IMUデータ
-        ├── POSLV
-        │   └── POSLV_run2.mat
-        └── Eagleye
-            └── run2
-                └── eagleye_log.csv
+└── ImprovedAdaptiveKF.m      # 補足: 拡張適応カルマンフィルタ
+
 ```
 
 ## 実行方法
 
-1. `a_GIAKF_main.m`をMATLABで開いてください
+1. `a_GIAKF_main.m`をMATLABで開いてください(GIAKF(GNSS/IMU AdaptiveKalmanFilter)以外のファイルは整理されていません)
 2. 実行ボタンをクリックしてください
 3. パス変更を求めるダイアログが表示された場合、指示に従ってください
 4. 結果グラフと分析データが表示されます
