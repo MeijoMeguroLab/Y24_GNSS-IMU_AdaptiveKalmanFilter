@@ -1,0 +1,145 @@
+%% 1. ゼロ割り防止とスムーズな位置予測
+% C_GIAKF_adaptive.m のメインループ内に追加
+
+% ヨーレートゼロ付近の処理改善
+straight_threshold = 0.001; % rad/s - 直線走行判定閾値
+
+if abs(data_yawrate(i-1)) < straight_threshold
+    % 直線走行の場合はシンプルな積分
+    Pre_KF_x = KF_x(i-1) + KF_velocity(i-1) * cos(KF_yaw(i-1)) * const_dt3(i);
+    Pre_KF_y = KF_y(i-1) + KF_velocity(i-1) * sin(KF_yaw(i-1)) * const_dt3(i);
+else
+    % カーブ走行の場合は曲率を考慮した積分
+    if adaptiveKF.isCurving
+        % カーブ補正を適用
+        [compensated_vel, beta] = curveErrorModel.compensateCurveErrors(KF_velocity(i-1), data_yawrate(i-1), -element_ay_EAGLEYE(i-1));
+        KF_beta(i) = beta;
+        KF_compensated_vel(i) = compensated_vel;
+        
+        % カーブ補正付き位置予測
+        [dx, dy] = curveErrorModel.predictCurvePosition(compensated_vel, KF_yaw(i-1), data_yawrate(i-1), const_dt3(i));
+        Pre_KF_x = KF_x(i-1) + dx;
+        Pre_KF_y = KF_y(i-1) + dy;
+    else
+        % 通常のカーブ予測（元のコード）
+        Pre_KF_x = KF_x(i-1) - KF_velocity(i-1) * (data_yawrate(i-1)^(-1)) * ...
+                  (-cos(KF_yaw(i-1) + data_yawrate(i-1) * const_dt3(i)) + cos(KF_yaw(i-1)));
+        Pre_KF_y = KF_y(i-1) - KF_velocity(i-1) * (data_yawrate(i-1)^(-1)) * ...
+                  (sin(KF_yaw(i-1) + data_yawrate(i-1) * const_dt3(i)) - sin(KF_yaw(i-1)));
+    end
+end
+
+%% 2. 動的カルマンゲイン調整 - 観測更新部分の前に追加
+
+% 走行状態に応じたカルマンゲイン調整
+if adaptiveKF.isCurving
+    % カーブ区間では観測ノイズを増加
+    curve_intensity = min(1, abs(data_yawrate(i-1) * KF_velocity(i-1)) / (pi/2));
+    curve_scale = 1 + curve_intensity;
+    
+    % GNSSを適度に信頼するよう調整
+    if flag_gnss(i) == 1
+        status_dispersion_param_obs_noise_gnssX(i) = status_dispersion_param_obs_noise_gnssX(i) * curve_scale * 0.8;
+        status_dispersion_param_obs_noise_gnssY(i) = status_dispersion_param_obs_noise_gnssY(i) * curve_scale * 0.8;
+    else
+        status_dispersion_param_obs_noise_gnssX(i) = status_dispersion_param_obs_noise_gnssX(i) * curve_scale;
+        status_dispersion_param_obs_noise_gnssY(i) = status_dispersion_param_obs_noise_gnssY(i) * curve_scale;
+    end
+else if adaptiveKF.isStopped
+    % 停止区間ではIMUよりGNSSを信頼
+    status_dispersion_param_obs_noise_gnssX(i) = status_dispersion_param_obs_noise_gnssX(i) * 0.7;
+    status_dispersion_param_obs_noise_gnssY(i) = status_dispersion_param_obs_noise_gnssY(i) * 0.7;
+end
+
+%% 3. 疑似誤差計算の改善 - status_pseudo_observation_error計算部分を置き換え
+
+% 構造体データ準備
+velocity_imu = state_velocity(i-1,:);
+velocity_gnss = data_velocity(i-1,:);
+
+% 車両状態に応じた重み調整
+if abs(data_yawrate(i-1)) > param_state_detect.curve_threshold
+    % カーブ区間
+    weight_imu = 0.6;
+    weight_gnss = 0.4;
+elseif abs(KF_velocity(i-1)) < param_state_detect.stop_threshold
+    % 停止区間
+    weight_imu = 0.2;
+    weight_gnss = 0.8;
+else
+    % 直線区間
+    weight_imu = 0.33;
+    weight_gnss = 0.67;
+end
+
+% GNSS品質による重み調整
+if flag_gnss(i-1) == 1
+    weight_gnss = weight_gnss * 1.2;
+    weight_imu = 1 - weight_gnss;
+end
+
+% 重み付き速度計算
+weighted_velocity = (weight_gnss * velocity_gnss + weight_imu * velocity_imu) / (weight_gnss + weight_imu);
+
+% 疑似観測誤差計算
+status_pseudo_observation_error(i,1:3) = status_timedifference(i,1:3) - weighted_velocity * const_dt3(i-1);
+status_pseudo_observation_error(i,1:3) = abs(status_pseudo_observation_error(i,1:3));
+
+%% 4. ロバスト統計の導入 - 分散パラメータ計算部分に追加
+
+% MAD (Median Absolute Deviation) を使ったロバスト分散推定
+if i > windowSize
+    % 各次元ごとにロバスト統計量を計算
+    for dim = 1:3
+        windowErrors = status_pseudo_observation_error(max(1, i-windowSize):i, dim);
+        median_error = median(windowErrors);
+        mad_error = median(abs(windowErrors - median_error));
+        
+        % MADを標準偏差に変換（正規分布の場合は1.4826倍）
+        robust_std = 1.4826 * mad_error;
+        
+        % 極端な外れ値を検出
+        outlier_idx = abs(windowErrors - median_error) > 3 * robust_std;
+        
+        % 外れ値を除いた分散推定
+        if sum(~outlier_idx) > windowSize/2
+            filtered_errors = windowErrors(~outlier_idx);
+            switch dim
+                case 1
+                    status_dispersion_param_obs_noise_gnssX(i) = var(filtered_errors);
+                case 2
+                    status_dispersion_param_obs_noise_gnssY(i) = var(filtered_errors);
+                case 3
+                    status_dispersion_param_obs_noise_gnssZ(i) = var(filtered_errors);
+            end
+        end
+    end
+end
+
+%% 5. 停止検出の強化 - 速度予測部分の前に追加
+
+% 停止状態の検出強化
+isStoppedByVelocity = abs(KF_velocity(i-1)) < param_state_detect.stop_threshold;
+isStoppedByAcc = norm(data_acc_Eagleye_enu3d(i-1)) < 0.1;  % 加速度も小さい
+isStoppedByGNSS = false;
+
+% GNSS速度も参照
+if i > 1 && isfield(status_VelocityResidual, 'gnss')
+    isStoppedByGNSS = abs(status_VelocityResidual(i-1).gnss) < 0.3;
+end
+
+% 複合条件で停止判定
+isStoppedCombined = isStoppedByVelocity && (isStoppedByAcc || isStoppedByGNSS);
+
+% 停止状態ならスリップ角をゼロに
+if isStoppedCombined
+    KF_beta(i) = 0;
+    
+    % 停止時は位置を固定に近づける
+    Pre_KF_x = KF_x(i-1);
+    Pre_KF_y = KF_y(i-1);
+    Pre_KF_z = KF_z(i-1);
+    
+    % 速度を強制的に0に近づける補正
+    Pre_KF_velocity = 0.1 * KF_velocity(i-1);
+end
